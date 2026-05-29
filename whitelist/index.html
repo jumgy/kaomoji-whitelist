@@ -6,6 +6,9 @@
   <title>カオモジ Kaomoji — Whitelist</title>
   <meta name="description" content="Join the Kaomoji whitelist. Connect Twitter, complete tasks, earn points." />
 
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="favicon.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+Symbols+2&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet" />
@@ -57,10 +60,10 @@
                 alt="(๑•̀ㅂ•́)و✧"
               />
             </div>
-            <div class="hero-copy">
-              <p class="hero-kicker">2026 — Official Whitelist</p>
-              <h2 class="hero-title">Join the <em>Kaomoji</em> Whitelist</h2>
-              <p class="hero-sub">Connect Twitter, complete tasks, and enter your wallet. More points = higher priority for mint access.</p>
+            <div class="hero-copy" id="hero-copy">
+              <p class="hero-kicker" id="hero-kicker">2026 — Official Whitelist</p>
+              <h2 class="hero-title" id="hero-title">Join the <em>Kaomoji</em> Whitelist</h2>
+              <p class="hero-sub" id="hero-sub">Connect Twitter, complete tasks, and enter your wallet. More points = higher priority for mint access.</p>
               <div class="hero-points-preview">
                 <span class="point-chip highlight">Twitter: 1-10 on review</span>
                 <span class="point-chip highlight">Follow: up to +2</span>
@@ -88,9 +91,28 @@
             </div>
             <div class="points-display" id="total-points">0 <small>verified pts</small></div>
           </div>
+
+          <div class="applied-inline is-hidden" id="applied-inline">
+            <div class="applied-inline__head">
+              <span class="status-badge" id="status-badge">PENDING</span>
+              <p class="applied-inline__note" id="applied-note">Application submitted — tasks scored manually.</p>
+            </div>
+            <div class="referral-inline">
+              <p class="referral-inline__title">Invite friends · <strong>+3 pts</strong> per approved referral</p>
+              <div class="ref-link-wrap">
+                <div class="ref-link-display" id="ref-link-display"></div>
+                <button type="button" class="ref-copy-btn" id="btn-copy-ref">COPY</button>
+              </div>
+              <button type="button" class="btn-pop secondary ref-share-btn" id="btn-share-twitter">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                Share on Twitter
+              </button>
+              <p class="referral-bonus" id="ref-bonus" hidden>Approved referrals: <span id="ref-count">0</span> · +<span id="ref-points">0</span> pts</p>
+            </div>
+          </div>
         </div>
 
-        <div class="form-col form-col--main">
+        <div class="form-col form-col--main" id="apply-form-block">
       <div class="tasks-panel">
         <div class="tasks-header">
           <h2>Tasks</h2>
@@ -104,7 +126,7 @@
             <p id="task-connect-hint">Better account quality = more points (1-10). Connect above.</p>
             <p class="task-review-note" id="task-connect-review" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--hint" id="connect-pts-badge">1-10 pts</div>
+          <div class="task-points" id="connect-pts-badge">1-10 pts</div>
         </div>
 
         <div class="task-item" id="task-follow">
@@ -114,7 +136,7 @@
             <p>Follow will be verified before approval</p>
             <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--hint required">+2 pts</div>
+          <div class="task-points required">+2 pts</div>
         </div>
 
         <div class="task-item" id="task-like">
@@ -123,7 +145,7 @@
             <h3>Like the post</h3>
             <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--hint">+1 pt</div>
+          <div class="task-points">+1 pt</div>
         </div>
 
         <div class="task-item" id="task-repost">
@@ -133,7 +155,7 @@
             <p>Quote RT or your own post scores higher · 1-10 pts on review</p>
             <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--hint">1-10 pts</div>
+          <div class="task-points task-points--range">1-10 pts</div>
         </div>
 
         <div class="task-item" id="task-comment">
@@ -142,7 +164,7 @@
             <h3>Comment on the post</h3>
             <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--hint">+1 pt</div>
+          <div class="task-points">+1 pt</div>
         </div>
       </div>
 
@@ -161,59 +183,6 @@
       </div>
 
       <button type="button" class="disconnect-btn is-hidden" id="btn-disconnect">Disconnect Twitter</button>
-    </div>
-
-    <!-- ═══════════ Success ═══════════ -->
-    <div id="screen-success" class="screen">
-      <div class="success-card">
-        <img class="success-kao-img" src="hero-kaomoji.svg" width="320" height="42" alt="" />
-        <h2 class="success-title">Application Submitted!</h2>
-        <p class="success-subtitle">Your entry is under review. Confirmed points (after manual check):</p>
-        <div class="score-box"><span id="final-score">0</span> <small>confirmed pts</small></div>
-      </div>
-
-      <div class="referral-section">
-        <h3>Invite Friends — Earn More Points</h3>
-        <p>Share your referral link. You get <strong>+3 points</strong> for each approved referral.</p>
-        <div class="ref-link-wrap">
-          <div class="ref-link-display" id="ref-link-display"></div>
-          <button type="button" class="ref-copy-btn" id="btn-copy-ref">COPY</button>
-        </div>
-        <button type="button" class="btn-pop secondary ref-share-btn" id="btn-share-twitter">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          Share on Twitter
-        </button>
-        <div class="referral-bonus" id="ref-bonus" hidden>Referrals approved: <span id="ref-count">0</span> = +<span id="ref-points">0</span> pts</div>
-      </div>
-
-      <button type="button" class="disconnect-btn" id="btn-disconnect-success">Disconnect</button>
-    </div>
-
-    <!-- ═══════════ Already Applied ═══════════ -->
-    <div id="screen-applied" class="screen">
-      <div class="status-card">
-        <div class="hero-kao">(•̀ᴗ•́)و</div>
-        <h2 class="hero-title">Already Applied</h2>
-        <div class="status-badge" id="status-badge">PENDING</div>
-        <div class="score-box"><span id="applied-score">0</span> <small>confirmed pts</small></div>
-        <p class="status-note">Your entry is in the queue. Share your referral link to earn more points!</p>
-      </div>
-
-      <div class="referral-section">
-        <h3>Invite Friends — Earn More Points</h3>
-        <p>Share your referral link. You get <strong>+3 points</strong> for each approved referral.</p>
-        <div class="ref-link-wrap">
-          <div class="ref-link-display" id="ref-link-display-2"></div>
-          <button type="button" class="ref-copy-btn" id="btn-copy-ref-2">COPY</button>
-        </div>
-        <button type="button" class="btn-pop secondary ref-share-btn" id="btn-share-twitter-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          Share on Twitter
-        </button>
-        <div class="referral-bonus" id="ref-bonus-2" hidden>Referrals approved: <span id="ref-count-2">0</span> = +<span id="ref-points-2">0</span> pts</div>
-      </div>
-
-      <button type="button" class="disconnect-btn" id="btn-disconnect-applied">Disconnect</button>
     </div>
 
   </div>

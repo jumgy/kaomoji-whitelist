@@ -21,20 +21,15 @@ if (isSupabaseConfigured) {
   }
 }
 
-const screens = {
-  form:    document.getElementById('screen-form'),
-  success: document.getElementById('screen-success'),
-  applied: document.getElementById('screen-applied'),
-};
-
 const dom = {
+  pageShell:         document.querySelector('.page-shell'),
   connectPanel:      document.getElementById('connect-panel'),
+  applyFormBlock:    document.getElementById('apply-form-block'),
+  appliedInline:     document.getElementById('applied-inline'),
   userBar:           document.getElementById('user-bar'),
   btnConnectTwitter: document.getElementById('btn-connect-twitter'),
   btnApply:          document.getElementById('btn-apply'),
   btnDisconnect:     document.getElementById('btn-disconnect'),
-  btnDisconnectSuccess: document.getElementById('btn-disconnect-success'),
-  btnDisconnectApplied: document.getElementById('btn-disconnect-applied'),
   userAvatar:        document.getElementById('user-avatar'),
   userDisplayName:   document.getElementById('user-display-name'),
   userTwitterHandle: document.getElementById('user-twitter-handle'),
@@ -42,10 +37,13 @@ const dom = {
   connectPtsBadge:   document.getElementById('connect-pts-badge'),
   taskConnect:       document.getElementById('task-connect'),
   taskConnectHint:   document.getElementById('task-connect-hint'),
+  heroKicker:        document.getElementById('hero-kicker'),
+  heroTitle:         document.getElementById('hero-title'),
+  heroSub:           document.getElementById('hero-sub'),
+  heroPointsPreview: document.querySelector('.hero-points-preview'),
+  appliedNote:       document.getElementById('applied-note'),
   walletInput:       document.getElementById('wallet-input'),
   walletError:       document.getElementById('wallet-error'),
-  finalScore:        document.getElementById('final-score'),
-  appliedScore:      document.getElementById('applied-score'),
   statusBadge:       document.getElementById('status-badge'),
   taskFollow:        document.getElementById('task-follow'),
   taskLike:          document.getElementById('task-like'),
@@ -64,11 +62,14 @@ const taskState = {
   comment: false,
 };
 
-function showScreen(name) {
-  Object.values(screens).forEach((s) => {
-    if (s) s.classList.remove('active');
-  });
-  if (screens[name]) screens[name].classList.add('active');
+function buildTasksClaimed() {
+  const parts = [];
+  if (twitterConnected) parts.push('connect');
+  if (taskState.follow) parts.push('follow');
+  if (taskState.like) parts.push('like');
+  if (taskState.repost) parts.push('repost');
+  if (taskState.comment) parts.push('comment');
+  return parts.length ? parts.join(',') : null;
 }
 
 function captureReferral() {
@@ -115,7 +116,6 @@ function resetTaskBadge(el) {
   const label = TASK_BADGE_LABELS[el.id];
   if (badge && label) {
     badge.textContent = label;
-    badge.classList.add('task-points--hint');
     badge.classList.remove('task-points--review');
   }
   setTaskReviewNote(el, false);
@@ -317,10 +317,11 @@ async function handleApply(user, meta) {
     twitter_avatar:   meta.avatar_url || meta.picture || '',
     wallet_address:   wallet,
     connect_points:   0,
-    task_follow:      taskState.follow,
-    task_like:        taskState.like,
-    task_repost:      taskState.repost,
-    task_comment:     taskState.comment,
+    task_follow:      false,
+    task_like:        false,
+    task_repost:      false,
+    task_comment:     false,
+    tasks_claimed:    buildTasksClaimed(),
     pts_follow:       0,
     pts_like:         0,
     pts_repost:       0,
@@ -339,7 +340,7 @@ async function handleApply(user, meta) {
   if (error) {
     dom.btnApply.disabled = false;
     if (error.code === '23505') {
-      window.location.reload();
+      await loadExistingEntry();
       return;
     }
     alert('Error submitting: ' + (error.message || 'Unknown error'));
@@ -348,19 +349,7 @@ async function handleApply(user, meta) {
 
   existingEntry = data;
   localStorage.removeItem('kaomoji_ref');
-  await refreshVerifiedScore();
-
-  showReferralUI(
-    data.referral_code,
-    'ref-link-display',
-    'btn-copy-ref',
-    'btn-share-twitter',
-    'ref-bonus',
-    'ref-count',
-    'ref-points'
-  );
-
-  showScreen('success');
+  setAppliedMode(data);
 }
 
 async function refreshVerifiedScore() {
@@ -373,29 +362,74 @@ async function refreshVerifiedScore() {
   if (dom.totalPoints) {
     dom.totalPoints.innerHTML = verified + ' <small>verified pts</small>';
   }
-  if (dom.appliedScore) dom.appliedScore.textContent = verified;
-  if (dom.finalScore) dom.finalScore.textContent = verified;
 }
 
-async function showAppliedScreen(entry) {
-  const refCount = await getReferralCount(entry.referral_code);
-  dom.appliedScore.textContent = calcPoints(entry, refCount);
+function setAppliedMode(entry) {
+  existingEntry = entry;
+
+  dom.pageShell?.classList.add('is-applied');
+  dom.applyFormBlock?.classList.add('is-hidden');
+  dom.connectPanel?.classList.add('is-hidden');
+  dom.appliedInline?.classList.remove('is-hidden');
+  dom.btnDisconnect?.classList.remove('is-hidden');
+
+  if (dom.heroKicker) dom.heroKicker.textContent = '2026 — Official Whitelist';
+  if (dom.heroTitle) dom.heroTitle.innerHTML = 'You\u2019re on the <em>Kaomoji</em> Whitelist';
+  if (dom.heroSub) {
+    dom.heroSub.textContent =
+      'Tasks are checked manually. Repost is scored 1–10 in the database.';
+  }
+  if (dom.appliedNote && entry.wallet_address) {
+    dom.appliedNote.textContent =
+      'Application submitted. Wallet: ' + entry.wallet_address.slice(0, 6) + '…' + entry.wallet_address.slice(-4);
+  }
 
   const status = entry.status || 'pending';
-  dom.statusBadge.textContent = status.toUpperCase();
-  dom.statusBadge.className = 'status-badge ' + status;
+  if (dom.statusBadge) {
+    dom.statusBadge.textContent = status.toUpperCase();
+    dom.statusBadge.className = 'status-badge ' + status;
+  }
 
   showReferralUI(
     entry.referral_code,
-    'ref-link-display-2',
-    'btn-copy-ref-2',
-    'btn-share-twitter-2',
-    'ref-bonus-2',
-    'ref-count-2',
-    'ref-points-2'
+    'ref-link-display',
+    'btn-copy-ref',
+    'btn-share-twitter',
+    'ref-bonus',
+    'ref-count',
+    'ref-points'
   );
 
-  showScreen('applied');
+  refreshVerifiedScore();
+}
+
+function clearAppliedMode() {
+  existingEntry = null;
+  dom.pageShell?.classList.remove('is-applied');
+  dom.applyFormBlock?.classList.remove('is-hidden');
+  dom.appliedInline?.classList.add('is-hidden');
+
+  if (dom.heroTitle) dom.heroTitle.innerHTML = 'Join the <em>Kaomoji</em> Whitelist';
+  if (dom.heroSub) {
+    dom.heroSub.textContent =
+      'Connect Twitter, complete tasks, and enter your wallet. More points = higher priority for mint access.';
+  }
+}
+
+async function loadExistingEntry() {
+  if (!supabaseClient || !currentUser) return false;
+
+  const { data: entries } = await supabaseClient
+    .from('whitelist_entries')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .limit(1);
+
+  if (entries && entries.length > 0) {
+    setAppliedMode(entries[0]);
+    return true;
+  }
+  return false;
 }
 
 async function getReferralCount(code) {
@@ -421,9 +455,8 @@ async function connectTwitter() {
 
 async function disconnectTwitter() {
   if (supabaseClient) await supabaseClient.auth.signOut();
-  existingEntry = null;
+  clearAppliedMode();
   markTwitterDisconnected();
-  showScreen('form');
 }
 
 async function restoreSession() {
@@ -443,18 +476,7 @@ async function restoreSession() {
     .limit(1);
 
   if (entries && entries.length > 0) {
-    existingEntry = entries[0];
-    taskState.follow = entries[0].task_follow;
-    taskState.like = entries[0].task_like;
-    taskState.repost = entries[0].task_repost;
-    taskState.comment = entries[0].task_comment;
-    if (entries[0].task_follow) markTaskClaimed(dom.taskFollow);
-    if (entries[0].task_like) markTaskClaimed(dom.taskLike);
-    if (entries[0].task_repost) markTaskClaimed(dom.taskRepost);
-    if (entries[0].task_comment) markTaskClaimed(dom.taskComment);
-    if (twitterConnected) markTaskClaimed(dom.taskConnect);
-    await showAppliedScreen(existingEntry);
-    await refreshVerifiedScore();
+    setAppliedMode(entries[0]);
   }
 }
 
@@ -539,7 +561,6 @@ function initMarquee() {
 async function init() {
   captureReferral();
   initMarquee();
-  showScreen('form');
   markTwitterDisconnected();
   initTaskHandlers();
 
@@ -556,7 +577,6 @@ async function init() {
     ]);
   } catch (e) {
     console.warn('Session restore skipped:', e);
-    showScreen('form');
   }
 }
 
@@ -575,17 +595,16 @@ dom.btnApply.addEventListener('click', () => {
 });
 
 dom.btnDisconnect.addEventListener('click', disconnectTwitter);
-dom.btnDisconnectSuccess.addEventListener('click', disconnectTwitter);
-dom.btnDisconnectApplied.addEventListener('click', disconnectTwitter);
 
 if (supabaseClient) {
-  supabaseClient.auth.onAuthStateChange((event, session) => {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
       currentUser = session.user;
       markTwitterConnected(currentUser, currentUser.user_metadata || {});
-      showScreen('form');
+      await loadExistingEntry();
     }
     if (event === 'SIGNED_OUT') {
+      clearAppliedMode();
       markTwitterDisconnected();
     }
   });

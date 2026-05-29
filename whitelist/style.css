@@ -596,13 +596,6 @@ input { font: inherit; }
   color: var(--fg);
 }
 
-.task-points--hint {
-  background: var(--pop-cyan);
-  color: var(--fg);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-
 .task-points--review {
   background: var(--surface);
   color: var(--fg);
@@ -620,6 +613,60 @@ input { font: inherit; }
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.applied-inline {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: 3px solid var(--fg);
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--fg);
+}
+
+.applied-inline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.applied-inline__note {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.referral-inline__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.referral-inline .ref-link-wrap {
+  margin-bottom: 10px;
+}
+
+.referral-inline .ref-share-btn {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.referral-bonus {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.page-shell.is-applied .hero-points-preview {
+  display: none;
 }
 
 .task-action {
