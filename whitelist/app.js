@@ -386,7 +386,7 @@ async function connectTwitter() {
     return;
   }
   const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: 'twitter',
+    provider: 'x',
     options: { redirectTo: window.location.origin + window.location.pathname },
   });
   if (error) alert('Twitter login failed: ' + error.message);
