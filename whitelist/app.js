@@ -329,16 +329,27 @@ async function handleApply(user, meta) {
     referred_by:      getSavedReferral(),
   };
 
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from('whitelist_entries')
     .insert(entry)
     .select()
     .single();
 
+  if (error && /tasks_claimed/i.test(error.message || '')) {
+    const fallback = { ...entry };
+    delete fallback.tasks_claimed;
+    ({ data, error } = await supabaseClient
+      .from('whitelist_entries')
+      .insert(fallback)
+      .select()
+      .single());
+  }
+
   dom.btnApply.textContent = 'Apply for Whitelist';
 
   if (error) {
     dom.btnApply.disabled = false;
+    console.error('Apply failed:', error);
     if (error.code === '23505') {
       await loadExistingEntry();
       return;
@@ -455,30 +466,44 @@ async function connectTwitter() {
 }
 
 async function disconnectTwitter() {
-  if (supabaseClient) await supabaseClient.auth.signOut();
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {
+    console.warn('Sign out failed:', e);
+  }
+  currentUser = null;
   clearAppliedMode();
   markTwitterDisconnected();
 }
 
 async function restoreSession() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    markTwitterDisconnected();
+    return;
+  }
 
   const { data: { session }, error } = await supabaseClient.auth.getSession();
-  if (error || !session) return;
+  if (error) {
+    console.warn('getSession error:', error);
+    markTwitterDisconnected();
+    return;
+  }
+  if (!session) {
+    markTwitterDisconnected();
+    return;
+  }
 
   currentUser = session.user;
-  const meta = currentUser.user_metadata || {};
-  markTwitterConnected(currentUser, meta);
+  markTwitterConnected(currentUser, currentUser.user_metadata || {});
+  await loadExistingEntry();
+}
 
-  const { data: entries } = await supabaseClient
-    .from('whitelist_entries')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .limit(1);
-
-  if (entries && entries.length > 0) {
-    setAppliedMode(entries[0]);
-  }
+function onAuthSession(session) {
+  if (!session) return;
+  currentUser = session.user;
+  markTwitterConnected(currentUser, currentUser.user_metadata || {});
+  loadExistingEntry();
 }
 
 function measureGroupWidth(group) {
@@ -559,56 +584,63 @@ function initMarquee() {
   track.style.animation = `marquee-scroll ${seconds}s linear infinite`;
 }
 
+function bindUiHandlers() {
+  dom.btnConnectTwitter?.addEventListener('click', connectTwitter);
+
+  dom.btnApply?.addEventListener('click', async () => {
+    if (!isSupabaseConfigured || !supabaseClient) {
+      alert('Backend not configured yet. Add Supabase URL and key in app.js');
+      return;
+    }
+    if (!currentUser) {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        markTwitterConnected(currentUser, currentUser.user_metadata || {});
+      } else {
+        alert('Connect Twitter before applying');
+        return;
+      }
+    }
+    handleApply(currentUser, currentUser.user_metadata || {});
+  });
+
+  dom.btnDisconnect?.addEventListener('click', disconnectTwitter);
+
+  dom.walletInput?.addEventListener('input', updateApplyState);
+}
+
 async function init() {
   captureReferral();
   initMarquee();
-  markTwitterDisconnected();
   initTaskHandlers();
+  bindUiHandlers();
 
-  dom.walletInput.addEventListener('input', updateApplyState);
+  if (!supabaseClient) {
+    markTwitterDisconnected();
+    return;
+  }
 
-  if (!supabaseClient) return;
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        clearAppliedMode();
+        markTwitterDisconnected();
+        return;
+      }
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+        onAuthSession(session);
+      }
+    });
+  }
 
   try {
-    await Promise.race([
-      restoreSession(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth timeout')), 8000)
-      ),
-    ]);
+    await restoreSession();
   } catch (e) {
-    console.warn('Session restore skipped:', e);
+    console.warn('Session restore failed:', e);
+    markTwitterDisconnected();
   }
-}
-
-dom.btnConnectTwitter.addEventListener('click', connectTwitter);
-
-dom.btnApply.addEventListener('click', () => {
-  if (!isSupabaseConfigured || !supabaseClient) {
-    alert('Backend not configured yet. Add Supabase URL and key in app.js');
-    return;
-  }
-  if (!currentUser) {
-    alert('Connect Twitter before applying');
-    return;
-  }
-  handleApply(currentUser, currentUser.user_metadata || {});
-});
-
-dom.btnDisconnect.addEventListener('click', disconnectTwitter);
-
-if (supabaseClient) {
-  supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      currentUser = session.user;
-      markTwitterConnected(currentUser, currentUser.user_metadata || {});
-      await loadExistingEntry();
-    }
-    if (event === 'SIGNED_OUT') {
-      clearAppliedMode();
-      markTwitterDisconnected();
-    }
-  });
 }
 
 let marqueeResizeTimer;
