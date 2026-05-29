@@ -12,10 +12,10 @@ const isSupabaseConfigured =
   SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY' &&
   typeof window.supabase !== 'undefined';
 
-let supabase = null;
+let supabaseClient = null;
 if (isSupabaseConfigured) {
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } catch (e) {
     console.warn('Supabase init failed:', e);
   }
@@ -280,9 +280,9 @@ function showReferralUI(code, linkId, copyId, shareId, bonusId, countId, pointsI
 }
 
 async function fetchReferralCount(code, bonusId, countId, pointsId) {
-  if (!supabase) return;
+  if (!supabaseClient) return;
   try {
-    const { data, error } = await supabase.rpc('count_approved_referrals', { code });
+    const { data, error } = await supabaseClient.rpc('count_approved_referrals', { code });
     if (!error && data > 0) {
       const bonusEl = document.getElementById(bonusId);
       const countEl = document.getElementById(countId);
@@ -315,7 +315,7 @@ async function handleApply(user, meta) {
     referred_by:      getSavedReferral(),
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('whitelist_entries')
     .insert(entry)
     .select()
@@ -372,20 +372,20 @@ async function showAppliedScreen(entry) {
 }
 
 async function getReferralCount(code) {
-  if (!supabase) return 0;
+  if (!supabaseClient) return 0;
   try {
-    const { data, error } = await supabase.rpc('count_approved_referrals', { code });
+    const { data, error } = await supabaseClient.rpc('count_approved_referrals', { code });
     if (!error) return data || 0;
   } catch (_) { /* silent */ }
   return 0;
 }
 
 async function connectTwitter() {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured || !supabaseClient) {
     alert('Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in app.js');
     return;
   }
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'twitter',
     options: { redirectTo: window.location.origin + window.location.pathname },
   });
@@ -393,23 +393,23 @@ async function connectTwitter() {
 }
 
 async function disconnectTwitter() {
-  if (supabase) await supabase.auth.signOut();
+  if (supabaseClient) await supabaseClient.auth.signOut();
   existingEntry = null;
   markTwitterDisconnected();
   showScreen('form');
 }
 
 async function restoreSession() {
-  if (!supabase) return;
+  if (!supabaseClient) return;
 
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
   if (error || !session) return;
 
   currentUser = session.user;
   const meta = currentUser.user_metadata || {};
   markTwitterConnected(currentUser, meta);
 
-  const { data: entries } = await supabase
+  const { data: entries } = await supabaseClient
     .from('whitelist_entries')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -519,7 +519,7 @@ async function init() {
 
   dom.walletInput.addEventListener('input', updateApplyState);
 
-  if (!supabase) return;
+  if (!supabaseClient) return;
 
   try {
     await Promise.race([
@@ -537,7 +537,7 @@ async function init() {
 dom.btnConnectTwitter.addEventListener('click', connectTwitter);
 
 dom.btnApply.addEventListener('click', () => {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured || !supabaseClient) {
     alert('Backend not configured yet. Add Supabase URL and key in app.js');
     return;
   }
@@ -552,8 +552,8 @@ dom.btnDisconnect.addEventListener('click', disconnectTwitter);
 dom.btnDisconnectSuccess.addEventListener('click', disconnectTwitter);
 dom.btnDisconnectApplied.addEventListener('click', disconnectTwitter);
 
-if (supabase) {
-  supabase.auth.onAuthStateChange((event, session) => {
+if (supabaseClient) {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
       currentUser = session.user;
       markTwitterConnected(currentUser, currentUser.user_metadata || {});
