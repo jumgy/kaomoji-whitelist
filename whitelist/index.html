@@ -92,27 +92,10 @@
             <div class="points-display" id="total-points">0 <small>verified pts</small></div>
           </div>
 
-          <div class="applied-inline is-hidden" id="applied-inline">
-            <div class="applied-inline__head">
-              <span class="status-badge" id="status-badge">PENDING</span>
-              <p class="applied-inline__note" id="applied-note">Application submitted — tasks scored manually.</p>
-            </div>
-            <div class="referral-inline">
-              <p class="referral-inline__title">Invite friends · <strong>+3 pts</strong> per approved referral</p>
-              <div class="ref-link-wrap">
-                <div class="ref-link-display" id="ref-link-display"></div>
-                <button type="button" class="ref-copy-btn" id="btn-copy-ref">COPY</button>
-              </div>
-              <button type="button" class="btn-pop secondary ref-share-btn" id="btn-share-twitter">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                Share on Twitter
-              </button>
-              <p class="referral-bonus" id="ref-bonus" hidden>Approved referrals: <span id="ref-count">0</span> · +<span id="ref-points">0</span> pts</p>
-            </div>
-          </div>
         </div>
 
         <div class="form-col form-col--main" id="apply-form-block">
+      <div id="apply-form-content">
       <div class="tasks-panel">
         <div class="tasks-header">
           <h2>Tasks</h2>
@@ -178,6 +161,27 @@
 
       <div class="apply-area">
         <button type="button" class="btn-pop btn-pop--large" id="btn-apply" disabled>Apply for Whitelist</button>
+      </div>
+      </div>
+
+      <div class="applied-side-panel is-hidden" id="applied-side-panel">
+        <div class="applied-side-panel__header">
+          <h2>Already Applied</h2>
+          <span class="status-badge" id="status-badge">PENDING</span>
+        </div>
+        <p class="applied-side-panel__wallet" id="applied-note">Wallet submitted</p>
+        <div class="applied-side-panel__ref">
+          <p class="applied-side-panel__ref-label">Referral · <strong>+3 pts</strong> each approved</p>
+          <div class="ref-link-wrap ref-link-wrap--compact">
+            <div class="ref-link-display" id="ref-link-display"></div>
+            <button type="button" class="ref-copy-btn" id="btn-copy-ref">COPY</button>
+          </div>
+          <button type="button" class="btn-pop secondary ref-share-btn ref-share-btn--compact" id="btn-share-twitter">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Share
+          </button>
+          <p class="referral-bonus referral-bonus--compact" id="ref-bonus" hidden>Refs: <span id="ref-count">0</span> · +<span id="ref-points">0</span> pts</p>
+        </div>
       </div>
         </div>
       </div>

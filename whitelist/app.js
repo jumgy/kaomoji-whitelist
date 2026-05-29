@@ -24,8 +24,8 @@ if (isSupabaseConfigured) {
 const dom = {
   pageShell:         document.querySelector('.page-shell'),
   connectPanel:      document.getElementById('connect-panel'),
-  applyFormBlock:    document.getElementById('apply-form-block'),
-  appliedInline:     document.getElementById('applied-inline'),
+  applyFormContent:  document.getElementById('apply-form-content'),
+  appliedSidePanel:  document.getElementById('applied-side-panel'),
   userBar:           document.getElementById('user-bar'),
   btnConnectTwitter: document.getElementById('btn-connect-twitter'),
   btnApply:          document.getElementById('btn-apply'),
@@ -368,20 +368,21 @@ function setAppliedMode(entry) {
   existingEntry = entry;
 
   dom.pageShell?.classList.add('is-applied');
-  dom.applyFormBlock?.classList.add('is-hidden');
+  dom.applyFormContent?.classList.add('is-hidden');
+  dom.appliedSidePanel?.classList.remove('is-hidden');
   dom.connectPanel?.classList.add('is-hidden');
-  dom.appliedInline?.classList.remove('is-hidden');
   dom.btnDisconnect?.classList.remove('is-hidden');
 
   if (dom.heroKicker) dom.heroKicker.textContent = '2026 — Official Whitelist';
-  if (dom.heroTitle) dom.heroTitle.innerHTML = 'You\u2019re on the <em>Kaomoji</em> Whitelist';
+  if (dom.heroTitle) dom.heroTitle.innerHTML = 'Already <em>Applied</em>';
   if (dom.heroSub) {
     dom.heroSub.textContent =
-      'Tasks are checked manually. Repost is scored 1–10 in the database.';
+      'We\u2019re reviewing your tasks. Points update after manual check.';
   }
   if (dom.appliedNote && entry.wallet_address) {
+    const w = entry.wallet_address;
     dom.appliedNote.textContent =
-      'Application submitted. Wallet: ' + entry.wallet_address.slice(0, 6) + '…' + entry.wallet_address.slice(-4);
+      'Wallet: ' + w.slice(0, 6) + '\u2026' + w.slice(-4);
   }
 
   const status = entry.status || 'pending';
@@ -406,8 +407,8 @@ function setAppliedMode(entry) {
 function clearAppliedMode() {
   existingEntry = null;
   dom.pageShell?.classList.remove('is-applied');
-  dom.applyFormBlock?.classList.remove('is-hidden');
-  dom.appliedInline?.classList.add('is-hidden');
+  dom.applyFormContent?.classList.remove('is-hidden');
+  dom.appliedSidePanel?.classList.add('is-hidden');
 
   if (dom.heroTitle) dom.heroTitle.innerHTML = 'Join the <em>Kaomoji</em> Whitelist';
   if (dom.heroSub) {
