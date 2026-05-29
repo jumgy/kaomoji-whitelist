@@ -62,12 +62,12 @@
               <h2 class="hero-title">Join the <em>Kaomoji</em> Whitelist</h2>
               <p class="hero-sub">Connect Twitter, complete tasks, and enter your wallet. More points = higher priority for mint access.</p>
               <div class="hero-points-preview">
-                <span class="point-chip highlight">Twitter: 1-10 pts</span>
-                <span class="point-chip highlight">Follow: +2</span>
-                <span class="point-chip">Like: +1</span>
-                <span class="point-chip">Repost: 1-10</span>
-                <span class="point-chip">Comment: +1</span>
-                <span class="point-chip highlight">Referral: +3 each</span>
+                <span class="point-chip highlight">Twitter: 1-10 on review</span>
+                <span class="point-chip highlight">Follow: up to +2</span>
+                <span class="point-chip">Like: up to +1</span>
+                <span class="point-chip">Repost: 1-10 on review</span>
+                <span class="point-chip">Comment: up to +1</span>
+                <span class="point-chip highlight">Referral: +3 when approved</span>
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@
               <span id="user-display-name"></span>
               <small id="user-twitter-handle"></small>
             </div>
-            <div class="points-display" id="total-points">0 <small>pts</small></div>
+            <div class="points-display" id="total-points">0 <small>verified pts</small></div>
           </div>
         </div>
 
@@ -102,8 +102,9 @@
           <div class="task-body">
             <h3>Connect Twitter</h3>
             <p id="task-connect-hint">Better account quality = more points (1-10). Connect above.</p>
+            <p class="task-review-note" id="task-connect-review" hidden>Under review</p>
           </div>
-          <div class="task-points required" id="connect-pts-badge">1-10 pts</div>
+          <div class="task-points task-points--hint" id="connect-pts-badge">1-10 pts</div>
         </div>
 
         <div class="task-item" id="task-follow">
@@ -111,16 +112,18 @@
           <div class="task-body">
             <h3>Follow @kaomojinft</h3>
             <p>Follow will be verified before approval</p>
+            <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points required">+2 pts</div>
+          <div class="task-points task-points--hint required">+2 pts</div>
         </div>
 
         <div class="task-item" id="task-like">
           <div class="task-check"></div>
           <div class="task-body">
             <h3>Like the post</h3>
+            <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points">+1 pt</div>
+          <div class="task-points task-points--hint">+1 pt</div>
         </div>
 
         <div class="task-item" id="task-repost">
@@ -128,16 +131,18 @@
           <div class="task-body">
             <h3>Repost the post</h3>
             <p>Quote RT or your own post scores higher · 1-10 pts on review</p>
+            <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points task-points--range">1-10 pts</div>
+          <div class="task-points task-points--hint">1-10 pts</div>
         </div>
 
         <div class="task-item" id="task-comment">
           <div class="task-check"></div>
           <div class="task-body">
             <h3>Comment on the post</h3>
+            <p class="task-review-note" hidden>Under review</p>
           </div>
-          <div class="task-points">+1 pt</div>
+          <div class="task-points task-points--hint">+1 pt</div>
         </div>
       </div>
 
@@ -163,8 +168,8 @@
       <div class="success-card">
         <img class="success-kao-img" src="hero-kaomoji.svg" width="320" height="42" alt="" />
         <h2 class="success-title">Application Submitted!</h2>
-        <p class="success-subtitle">Your whitelist entry is being reviewed. Here's your score:</p>
-        <div class="score-box"><span id="final-score">0</span> <small>points</small></div>
+        <p class="success-subtitle">Your entry is under review. Confirmed points (after manual check):</p>
+        <div class="score-box"><span id="final-score">0</span> <small>confirmed pts</small></div>
       </div>
 
       <div class="referral-section">
@@ -190,7 +195,7 @@
         <div class="hero-kao">(•̀ᴗ•́)و</div>
         <h2 class="hero-title">Already Applied</h2>
         <div class="status-badge" id="status-badge">PENDING</div>
-        <div class="score-box"><span id="applied-score">0</span> <small>points</small></div>
+        <div class="score-box"><span id="applied-score">0</span> <small>confirmed pts</small></div>
         <p class="status-note">Your entry is in the queue. Share your referral link to earn more points!</p>
       </div>
 

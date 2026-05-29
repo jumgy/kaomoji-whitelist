@@ -565,6 +565,16 @@ input { font: inherit; }
   margin-bottom: 0;
 }
 
+.task-review-note {
+  margin: 6px 0 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pop-red);
+}
+
 .task-points {
   font-family: var(--font-display);
   font-size: 13px;
@@ -584,6 +594,32 @@ input { font: inherit; }
 .task-points--range {
   background: var(--pop-orange);
   color: var(--fg);
+}
+
+.task-points--hint {
+  background: var(--pop-cyan);
+  color: var(--fg);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.task-points--review {
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: blink 1.4s step-end infinite;
+}
+
+.task-item.completed .task-points--review {
+  background: var(--pop-yellow);
+}
+
+.points-display small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .task-action {

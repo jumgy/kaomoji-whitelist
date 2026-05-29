@@ -55,7 +55,6 @@ const dom = {
 
 let currentUser = null;
 let existingEntry = null;
-let connectPts = 0;
 let twitterConnected = false;
 
 const taskState = {
@@ -84,35 +83,42 @@ function getSavedReferral() {
   return localStorage.getItem('kaomoji_ref') || null;
 }
 
-function getConnectPoints() {
-  if (connectPts > 0) return connectPts;
-  const saved = parseInt(localStorage.getItem('kaomoji_connect_pts'), 10);
-  if (saved >= 1 && saved <= 10) {
-    connectPts = saved;
-    return connectPts;
-  }
-  connectPts = Math.floor(Math.random() * 10) + 1;
-  localStorage.setItem('kaomoji_connect_pts', String(connectPts));
-  return connectPts;
-}
-
+/** Confirmed score only — awarded columns set manually in Supabase. */
 function calcPoints(entry, refCount) {
   if (!entry) return 0;
   let pts = entry.connect_points || 0;
-  if (entry.task_follow) pts += 2;
-  if (entry.task_like) pts += 1;
-  if (entry.task_repost) pts += 1;
-  if (entry.task_comment) pts += 1;
+  pts += entry.pts_follow || 0;
+  pts += entry.pts_like || 0;
+  pts += entry.pts_repost || 0;
+  pts += entry.pts_comment || 0;
   pts += (refCount || 0) * 3;
   return pts;
 }
 
-function calcLocalPoints() {
-  let pts = twitterConnected ? getConnectPoints() : 0;
-  if (taskState.follow) pts += 2;
-  if (taskState.like) pts += 1;
-  if (taskState.comment) pts += 1;
-  return pts;
+const TASK_BADGE_LABELS = {
+  'task-connect': '1-10 pts',
+  'task-follow':  '+2 pts',
+  'task-like':    '+1 pt',
+  'task-repost':  '1-10 pts',
+  'task-comment': '+1 pt',
+};
+
+function setTaskReviewNote(el, visible) {
+  if (!el) return;
+  const note = el.querySelector('.task-review-note');
+  if (note) note.hidden = !visible;
+}
+
+function resetTaskBadge(el) {
+  if (!el || !el.id) return;
+  const badge = el.querySelector('.task-points');
+  const label = TASK_BADGE_LABELS[el.id];
+  if (badge && label) {
+    badge.textContent = label;
+    badge.classList.add('task-points--hint');
+    badge.classList.remove('task-points--review');
+  }
+  setTaskReviewNote(el, false);
 }
 
 function isValidWallet(addr) {
@@ -120,20 +126,23 @@ function isValidWallet(addr) {
   return /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
 }
 
-function markTaskDone(el) {
+function markTaskClaimed(el) {
   el.classList.add('completed');
   el.classList.remove('task-item--locked');
   const check = el.querySelector('.task-check');
   if (check) check.innerHTML = '&#10003;';
+  resetTaskBadge(el);
+  setTaskReviewNote(el, true);
 }
 
 function resetOptionalTasks() {
-  ['task-like', 'task-repost', 'task-comment', 'task-follow'].forEach((id) => {
+  ['task-follow', 'task-like', 'task-repost', 'task-comment'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('completed');
     const check = el.querySelector('.task-check');
     if (check) check.innerHTML = '';
+    resetTaskBadge(el);
   });
   taskState.follow = false;
   taskState.like = false;
@@ -172,13 +181,13 @@ function updateApplyState() {
   }
 
   if (dom.totalPoints) {
-    dom.totalPoints.innerHTML = calcLocalPoints() + ' <small>pts</small>';
+    const verified = existingEntry ? calcPoints(existingEntry, 0) : 0;
+    dom.totalPoints.innerHTML = verified + ' <small>verified pts</small>';
   }
 }
 
 function markTwitterConnected(user, meta) {
   twitterConnected = true;
-  const pts = getConnectPoints();
 
   dom.connectPanel.classList.add('is-hidden');
   dom.userBar.classList.remove('is-hidden');
@@ -193,11 +202,10 @@ function markTwitterConnected(user, meta) {
   dom.userDisplayName.textContent = displayName;
   dom.userTwitterHandle.textContent = handle ? '@' + handle : '';
 
-  dom.connectPtsBadge.textContent = '+' + pts + ' pts';
   if (dom.taskConnectHint) {
-    dom.taskConnectHint.textContent = `Connected · +${pts} pts (account quality scored on review)`;
+    dom.taskConnectHint.textContent = 'Connected · 1-10 on review';
   }
-  markTaskDone(dom.taskConnect);
+  markTaskClaimed(dom.taskConnect);
 
   setTasksLocked(false);
   updateApplyState();
@@ -217,7 +225,8 @@ function markTwitterDisconnected() {
   if (dom.taskConnectHint) {
     dom.taskConnectHint.textContent = 'Better account quality = more points (1-10). Connect above.';
   }
-  dom.connectPtsBadge.textContent = '1-10 pts';
+  resetTaskBadge(dom.taskConnect);
+  if (dom.connectPtsBadge) dom.connectPtsBadge.textContent = '1-10 pts';
 
   resetOptionalTasks();
   setTasksLocked(true);
@@ -234,7 +243,7 @@ function setupTaskHandler(el, taskKey, intentUrl) {
     if (taskState[taskKey]) return;
     window.open(intentUrl, '_blank', 'noopener');
     taskState[taskKey] = true;
-    markTaskDone(el);
+    markTaskClaimed(el);
     updateApplyState();
   });
 }
@@ -307,11 +316,15 @@ async function handleApply(user, meta) {
     twitter_username: meta.user_name || meta.preferred_username || '',
     twitter_avatar:   meta.avatar_url || meta.picture || '',
     wallet_address:   wallet,
-    connect_points:   getConnectPoints(),
+    connect_points:   0,
     task_follow:      taskState.follow,
     task_like:        taskState.like,
     task_repost:      taskState.repost,
     task_comment:     taskState.comment,
+    pts_follow:       0,
+    pts_like:         0,
+    pts_repost:       0,
+    pts_comment:      0,
     referred_by:      getSavedReferral(),
   };
 
@@ -335,7 +348,7 @@ async function handleApply(user, meta) {
 
   existingEntry = data;
   localStorage.removeItem('kaomoji_ref');
-  dom.finalScore.textContent = calcPoints(data, 0);
+  await refreshVerifiedScore();
 
   showReferralUI(
     data.referral_code,
@@ -348,6 +361,20 @@ async function handleApply(user, meta) {
   );
 
   showScreen('success');
+}
+
+async function refreshVerifiedScore() {
+  if (!existingEntry) {
+    updateApplyState();
+    return;
+  }
+  const refCount = await getReferralCount(existingEntry.referral_code);
+  const verified = calcPoints(existingEntry, refCount);
+  if (dom.totalPoints) {
+    dom.totalPoints.innerHTML = verified + ' <small>verified pts</small>';
+  }
+  if (dom.appliedScore) dom.appliedScore.textContent = verified;
+  if (dom.finalScore) dom.finalScore.textContent = verified;
 }
 
 async function showAppliedScreen(entry) {
@@ -421,14 +448,13 @@ async function restoreSession() {
     taskState.like = entries[0].task_like;
     taskState.repost = entries[0].task_repost;
     taskState.comment = entries[0].task_comment;
-    if (entries[0].task_follow) markTaskDone(dom.taskFollow);
-    if (entries[0].task_like) markTaskDone(dom.taskLike);
-    if (entries[0].task_repost) markTaskDone(dom.taskRepost);
-    if (entries[0].task_comment) markTaskDone(dom.taskComment);
-    connectPts = entries[0].connect_points;
-    localStorage.setItem('kaomoji_connect_pts', String(connectPts));
-    dom.connectPtsBadge.textContent = '+' + connectPts + ' pts';
+    if (entries[0].task_follow) markTaskClaimed(dom.taskFollow);
+    if (entries[0].task_like) markTaskClaimed(dom.taskLike);
+    if (entries[0].task_repost) markTaskClaimed(dom.taskRepost);
+    if (entries[0].task_comment) markTaskClaimed(dom.taskComment);
+    if (twitterConnected) markTaskClaimed(dom.taskConnect);
     await showAppliedScreen(existingEntry);
+    await refreshVerifiedScore();
   }
 }
 
