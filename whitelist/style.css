@@ -683,6 +683,66 @@ input { font: inherit; }
   display: none;
 }
 
+.page-shell.is-closed .hero-points-preview {
+  display: none;
+}
+
+body.is-closed .hero-points-preview {
+  display: none;
+}
+
+/* ─── Closed applications panel ─── */
+
+.closed-panel {
+  width: 100%;
+  padding: 28px 22px;
+  border: 3px solid var(--fg);
+  background: color-mix(in oklch, var(--pop-yellow) 25%, var(--surface));
+  box-shadow: 6px 6px 0 var(--fg);
+  text-align: center;
+}
+
+.closed-panel__badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 8px 18px;
+  margin-bottom: 14px;
+  background: var(--fg);
+  color: var(--surface);
+  animation: blink 1.4s step-end infinite;
+}
+
+.closed-panel__title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 900;
+  margin: 0 0 10px;
+  line-height: 1.15;
+}
+
+.closed-panel__text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 36ch;
+  margin-inline: auto;
+}
+
+.page-shell.is-closed .marquee-wrap,
+body.is-closed .marquee-wrap {
+  background: color-mix(in oklch, var(--pop-red) 35%, var(--pop-yellow));
+}
+
+.page-shell.is-closed .marquee-group .hot,
+body.is-closed .marquee-group .hot {
+  color: var(--pop-red);
+}
+
 .task-action {
   grid-column: 2 / -1;
   padding-left: 0;

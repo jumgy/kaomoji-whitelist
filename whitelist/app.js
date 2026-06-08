@@ -1,6 +1,9 @@
 const SUPABASE_URL = 'https://qwabvvnpprxksnqlfmow.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_X8Fwu6nENNv0ZzjfELalhg_rCr6eJOs';
 
+/** Set to false to reopen new whitelist submissions. */
+const APPLICATIONS_CLOSED = true;
+
 const TWITTER_HANDLE = 'kaomojinft';
 const TWEET_ID = '2059363078450315727';
 const TWITTER_PROFILE_URL = 'https://x.com/' + TWITTER_HANDLE;
@@ -24,7 +27,9 @@ if (isSupabaseConfigured) {
 const dom = {
   pageShell:         document.querySelector('.page-shell'),
   connectPanel:      document.getElementById('connect-panel'),
+  connectPanelLabel: document.querySelector('#connect-panel .connect-panel__label'),
   applyFormContent:  document.getElementById('apply-form-content'),
+  closedPanel:       document.getElementById('closed-panel'),
   appliedSidePanel:  document.getElementById('applied-side-panel'),
   userBar:           document.getElementById('user-bar'),
   btnConnectTwitter: document.getElementById('btn-connect-twitter'),
@@ -165,6 +170,11 @@ function setTasksLocked(locked) {
 }
 
 function updateApplyState() {
+  if (APPLICATIONS_CLOSED && !existingEntry) {
+    dom.btnApply.disabled = true;
+    return;
+  }
+
   const walletVal = dom.walletInput.value.trim();
   const walletValid = isValidWallet(walletVal);
   const canApply = twitterConnected && taskState.follow && walletValid;
@@ -207,7 +217,11 @@ function markTwitterConnected(user, meta) {
   }
   markTaskClaimed(dom.taskConnect);
 
-  setTasksLocked(false);
+  if (APPLICATIONS_CLOSED && !existingEntry) {
+    setTasksLocked(true);
+  } else {
+    setTasksLocked(false);
+  }
   updateApplyState();
 }
 
@@ -239,6 +253,7 @@ function setupTaskHandler(el, taskKey, intentUrl) {
   el.style.cursor = 'pointer';
 
   el.addEventListener('click', () => {
+    if (APPLICATIONS_CLOSED && !existingEntry) return;
     if (!twitterConnected) return;
     if (taskState[taskKey]) return;
     window.open(intentUrl, '_blank', 'noopener');
@@ -304,6 +319,8 @@ async function fetchReferralCount(code, bonusId, countId, pointsId) {
 }
 
 async function handleApply(user, meta) {
+  if (APPLICATIONS_CLOSED) return;
+
   const wallet = dom.walletInput.value.trim();
   if (!isValidWallet(wallet) || !taskState.follow || !twitterConnected) return;
 
@@ -371,10 +388,40 @@ async function refreshVerifiedScore() {
   }
 }
 
+function setClosedMode() {
+  if (!APPLICATIONS_CLOSED || existingEntry) return;
+
+  document.body.classList.add('is-closed');
+  dom.pageShell?.classList.add('is-closed');
+  dom.pageShell?.classList.remove('is-applied');
+  dom.applyFormContent?.classList.add('is-hidden');
+  dom.closedPanel?.classList.remove('is-hidden');
+  dom.appliedSidePanel?.classList.add('is-hidden');
+
+  if (dom.heroKicker) dom.heroKicker.textContent = '2026 — Official Whitelist';
+  if (dom.heroTitle) dom.heroTitle.innerHTML = 'Applications <em>Closed</em>';
+  if (dom.heroSub) {
+    dom.heroSub.textContent =
+      'New submissions are no longer accepted. Already applied? Connect Twitter to check your status and points.';
+  }
+  if (dom.connectPanelLabel) {
+    dom.connectPanelLabel.textContent = 'Connect Twitter to check your status';
+  }
+  if (dom.walletInput) dom.walletInput.disabled = true;
+  if (dom.btnApply) {
+    dom.btnApply.disabled = true;
+    dom.btnApply.textContent = 'Applications Closed';
+  }
+  setTasksLocked(true);
+}
+
 function setAppliedMode(entry) {
   existingEntry = entry;
 
+  document.body.classList.remove('is-closed');
+  dom.pageShell?.classList.remove('is-closed');
   dom.pageShell?.classList.add('is-applied');
+  dom.closedPanel?.classList.add('is-hidden');
   dom.applyFormContent?.classList.add('is-hidden');
   dom.appliedSidePanel?.classList.remove('is-hidden');
   dom.connectPanel?.classList.add('is-hidden');
@@ -414,13 +461,27 @@ function setAppliedMode(entry) {
 function clearAppliedMode() {
   existingEntry = null;
   dom.pageShell?.classList.remove('is-applied');
-  dom.applyFormContent?.classList.remove('is-hidden');
   dom.appliedSidePanel?.classList.add('is-hidden');
+
+  if (APPLICATIONS_CLOSED) {
+    setClosedMode();
+    return;
+  }
+
+  dom.pageShell?.classList.remove('is-closed');
+  document.body.classList.remove('is-closed');
+  dom.applyFormContent?.classList.remove('is-hidden');
+  dom.closedPanel?.classList.add('is-hidden');
+  if (dom.walletInput) dom.walletInput.disabled = false;
+  if (dom.btnApply) dom.btnApply.textContent = 'Apply for Whitelist';
 
   if (dom.heroTitle) dom.heroTitle.innerHTML = 'Join the <em>Kaomoji</em> Whitelist';
   if (dom.heroSub) {
     dom.heroSub.textContent =
       'Connect Twitter, complete tasks, and enter your wallet. More points = higher priority for mint access.';
+  }
+  if (dom.connectPanelLabel) {
+    dom.connectPanelLabel.textContent = 'Step 1 — Connect your account';
   }
 }
 
@@ -492,14 +553,16 @@ async function restoreSession() {
 
   currentUser = session.user;
   markTwitterConnected(currentUser, currentUser.user_metadata || {});
-  await loadExistingEntry();
+  const hasEntry = await loadExistingEntry();
+  if (APPLICATIONS_CLOSED && !hasEntry) setClosedMode();
 }
 
-function onAuthSession(session) {
+async function onAuthSession(session) {
   if (!session) return;
   currentUser = session.user;
   markTwitterConnected(currentUser, currentUser.user_metadata || {});
-  loadExistingEntry();
+  const hasEntry = await loadExistingEntry();
+  if (APPLICATIONS_CLOSED && !hasEntry) setClosedMode();
 }
 
 function measureGroupWidth(group) {
@@ -524,6 +587,33 @@ function getMarqueePattern(group) {
     }
   });
   return pattern;
+}
+
+const MARQUEE_CLOSED_PATTERN = [
+  { className: 'hot', text: 'APPLICATIONS CLOSED' },
+  { text: 'Already applied? Connect Twitter to check status' },
+  { className: 'hot', text: 'カオモジ KAOMOJI NFT' },
+  { text: 'New submissions no longer accepted' },
+  { text: 'Thank you for your interest' },
+];
+
+function fillMarqueeSegment(segment, pattern) {
+  segment.innerHTML = '';
+  pattern.forEach((item) => {
+    const span = document.createElement('span');
+    if (item.className) span.className = item.className;
+    span.textContent = item.text;
+    segment.appendChild(span);
+  });
+}
+
+function updateMarqueeClosed() {
+  const track = document.getElementById('marquee-track');
+  if (!track) return;
+  track.querySelectorAll('[data-marquee-segment]').forEach((segment) => {
+    fillMarqueeSegment(segment, MARQUEE_CLOSED_PATTERN);
+  });
+  initMarquee();
 }
 
 /** Extend segments if needed, then scroll by exact pixel width of one segment. */
@@ -584,6 +674,7 @@ function bindUiHandlers() {
   dom.btnConnectTwitter?.addEventListener('click', connectTwitter);
 
   dom.btnApply?.addEventListener('click', async () => {
+    if (APPLICATIONS_CLOSED) return;
     if (!isSupabaseConfigured || !supabaseClient) {
       alert('Backend not configured yet. Add Supabase URL and key in app.js');
       return;
@@ -608,9 +699,15 @@ function bindUiHandlers() {
 
 async function init() {
   captureReferral();
-  initMarquee();
   initTaskHandlers();
   bindUiHandlers();
+
+  if (APPLICATIONS_CLOSED) {
+    updateMarqueeClosed();
+    setClosedMode();
+  } else {
+    initMarquee();
+  }
 
   if (!supabaseClient) {
     markTwitterDisconnected();
